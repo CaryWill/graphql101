@@ -9,29 +9,45 @@ var schema = buildSchema(`
   type Rect {
     width: Int!
     height: Int!
-    name: String
+  }
+  input RectInput {
+    id: Int!
+    width: Int!
+    height: Int!
   }
   type Query {
-    rect(width: Int, height: Int, name: String): Rect
+    rect(width: Int, height: Int): Rect
+    getRect(id: Int): Rect
+  }
+  type Mutation {
+    updateRect(input: RectInput): Rect 
+    createRect(input: RectInput): Rect
   }
 `);
 
 class Rect {
-  constructor(width, height, name) {
+  constructor(width, height) {
     this.width = width;
     this.height = height;
-    this.name = name;
   }
 
   area = () => this.width * this.height;
-
-  cir = () => 2 * (this.width + this.height);
 }
 // The root provides a resolver function for each API endpoint
 // 提供具体的返回数据
+var fakeDatabase = {};
 var root = {
-  rect: ({width, height, name}) => {
-    return new Rect(width, height, name);
+  rect: ({width, height}) => {
+    return new Rect(width, height);
+  },
+  createRect: ({ input }) => {
+    fakeDatabase[input.id] = input;
+  },
+  updateRect: ({ input }) => {
+    fakeDatabase[input.id] = input;
+  },
+  getRect: ({ id }) => {
+    return fakeDatabase[id];
   }
 };
 
@@ -45,18 +61,7 @@ app.use('/graphql', graphqlHTTP({
 app.listen(4000);
 console.log('Running a GraphQL API server at localhost:4000/graphql');
 
-/*
-// 前端
-var width = 3;
-var height = 6;
-var name = 'a rect'
-var query = `query Rect($width: Int!, $height: Int, $name: String) {
-  rect(width: $width, height: $height, name: $name) {
-    width,
-    height,
-    name
-  }
-}`;
+/*var query = `mutation CreateRect {createRect(input: {id: 1, width: 2, height: 3}) { width }}`;
 
 fetch('/graphql', {
   method: 'POST',
@@ -65,10 +70,23 @@ fetch('/graphql', {
     'Accept': 'application/json',
   },
   body: JSON.stringify({
-    query,
-    variables: { width, height, name },
+    query
   })
 })
   .then(r => r.json())
   .then(data => console.log('data returned:', data));
-*/
+
+var query = `{getRect(id: 1) { width }}`;
+
+fetch('/graphql', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  },
+  body: JSON.stringify({
+    query
+  })
+})
+  .then(r => r.json())
+  .then(data => console.log('data returned:', data));*/
